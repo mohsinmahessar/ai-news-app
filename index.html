@@ -8,20 +8,16 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #111; }
-  
   .header { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 14px 20px; position: sticky; top: 0; z-index: 10; }
   .header-title { font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
   .header-sub { font-size: 12px; color: #888; margin-top: 2px; }
   .ldot { width: 8px; height: 8px; background: #e63946; border-radius: 50%; display: inline-block; animation: blink 1.4s infinite; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-
   .tabs { background: #fff; padding: 10px 16px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid #e5e5e5; }
   .tabs::-webkit-scrollbar { display: none; }
   .tab { padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; white-space: nowrap; border: 1px solid #ddd; background: #fff; color: #555; font-family: inherit; }
   .tab.active { background: #111; color: #fff; border-color: #111; }
-
   .container { max-width: 700px; margin: 0 auto; }
-
   .news-list { background: #fff; margin: 12px 12px 0; border-radius: 12px; overflow: hidden; }
   .ncard { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; align-items: flex-start; transition: background 0.15s; }
   .ncard:hover { background: #fafafa; }
@@ -35,8 +31,7 @@
   .ctime { font-size: 12px; color: #888; }
   .bmbtn { background: none; border: none; cursor: pointer; color: #bbb; padding: 3px 5px; font-size: 16px; }
   .bmbtn.saved { color: #e63946; }
-
-  .art-view { display: none; background: #fff; margin: 12px 12px 0; border-radius: 12px; overflow: hidden; padding: 16px; }
+  .art-view { display: none; background: #fff; margin: 12px 12px 0; border-radius: 12px; padding: 16px; }
   .back-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: 1px solid #ddd; border-radius: 8px; padding: 7px 14px; cursor: pointer; font-size: 13px; color: #555; font-family: inherit; margin-bottom: 14px; }
   .back-btn:hover { background: #f5f5f5; }
   .art-src { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
@@ -46,35 +41,25 @@
   .ai-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.4px; display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-weight: 500; }
   .ai-text { font-size: 15px; color: #222; line-height: 1.7; }
   .read-link { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #0066cc; text-decoration: none; padding: 8px 0; }
-  
   .spin { display: inline-block; width: 13px; height: 13px; border: 2px solid #ddd; border-top-color: #888; border-radius: 50%; animation: sp 0.7s linear infinite; vertical-align: -2px; margin-right: 5px; }
   @keyframes sp { to { transform: rotate(360deg); } }
   .smsg { text-align: center; padding: 3rem 1rem; color: #888; font-size: 14px; line-height: 2; }
-  
   .badge { background: #e8f4fd; color: #0066cc; font-size: 10px; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
-
-  @media (max-width: 480px) {
-    .header { padding: 12px 16px; }
-    .news-list, .art-view { margin: 8px 8px 0; }
-  }
+  @media (max-width: 480px) { .header { padding: 12px 16px; } .news-list, .art-view { margin: 8px 8px 0; } }
 </style>
 </head>
 <body>
-
 <div class="container">
   <div class="header">
     <div class="header-title"><span class="ldot"></span> AI News Simplified</div>
     <div class="header-sub">Any language · Easy English · Powered by Claude AI</div>
   </div>
-
   <div class="tabs" id="tabs"></div>
-
   <div id="listView">
     <div class="news-list" id="nlist">
       <div class="smsg"><span class="spin"></span> Loading latest news...</div>
     </div>
   </div>
-
   <div class="art-view" id="artView">
     <button class="back-btn" onclick="goBack()">
       <i class="ti ti-arrow-left"></i> Back to news
@@ -84,12 +69,15 @@
 </div>
 
 <script>
-const FEEDS = {
-  "World":    "https://feeds.bbci.co.uk/news/world/rss.xml",
-  "Pakistan": "https://www.dawn.com/feeds/home",
-  "Tech":     "https://techcrunch.com/feed/",
-  "Business": "https://feeds.bbci.co.uk/news/business/rss.xml",
-  "Sports":   "https://feeds.bbci.co.uk/sport/rss.xml"
+const GNEWS_KEY  = "YOUR_GNEWS_KEY_HERE";    // from gnews.io
+const CLAUDE_KEY = "YOUR_CLAUDE_KEY_HERE";   // from console.anthropic.com
+
+const CATEGORIES = {
+  "World":    "world",
+  "Pakistan": "nation",
+  "Tech":     "technology",
+  "Business": "business",
+  "Sports":   "sports"
 };
 
 const ICONS = {
@@ -97,12 +85,11 @@ const ICONS = {
   Business:"ti-chart-line", Sports:"ti-trophy"
 };
 
-const API_KEY   = "YOUR_CLAUDE_API_KEY_HERE";
-const PROXY = "/api/news?url=";
 const bookmarks = new Set();
 
+// Build tabs
 const tabsEl = document.getElementById("tabs");
-Object.keys(FEEDS).forEach((cat, i) => {
+Object.keys(CATEGORIES).forEach((cat, i) => {
   const b = document.createElement("button");
   b.className = "tab" + (i === 0 ? " active" : "");
   b.innerHTML = `<i class="ti ${ICONS[cat]}" style="font-size:12px;vertical-align:-1px;margin-right:3px"></i>${cat}`;
@@ -134,49 +121,39 @@ function simpleHash(str) {
   return Math.abs(h).toString(36).slice(0, 12);
 }
 
-function getImage(item) {
-  return item.getElementsByTagName("media:thumbnail")[0]?.getAttribute("url")
-      || item.getElementsByTagName("media:content")[0]?.getAttribute("url")
-      || item.querySelector("enclosure[type^='image']")?.getAttribute("url")
-      || (item.querySelector("description")?.textContent?.match(/<img[^>]+src=["']([^"']+)["']/) || [])[1]
-      || "";
-}
-
 async function loadNews(cat) {
-  const el = document.getElementById("nlist");
+  const el  = document.getElementById("nlist");
   el.innerHTML = `<div class="smsg"><span class="spin"></span> Fetching ${cat} news...</div>`;
-  try {
-    const res  = await fetch(PROXY + encodeURIComponent(FEEDS[cat]));
-    if (!res.ok) throw new Error("fetch failed");
-    const text = await res.text();
-    const xml  = new DOMParser().parseFromString(text, "text/xml");
 
-    const chanTitle = xml.querySelector("channel > title")?.textContent || cat;
-    const rawItems  = [...xml.querySelectorAll("item")].slice(0, 15);
-    if (!rawItems.length) throw new Error("empty");
+  const category = CATEGORIES[cat];
+  const url = cat === "Pakistan"
+    ? `https://gnews.io/api/v4/search?q=pakistan&lang=en&max=15&token=${GNEWS_KEY}`
+    : `https://gnews.io/api/v4/top-headlines?category=${category}&lang=en&max=15&token=${GNEWS_KEY}`;
+
+  try {
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error("API error: " + res.status);
+    const data = await res.json();
+    if (!data.articles?.length) throw new Error("No articles");
 
     el.innerHTML = "";
-    rawItems.forEach(item => {
-      const title   = item.querySelector("title")?.textContent || "";
-      const link    = item.querySelector("link")?.textContent  || "";
-      const desc    = item.querySelector("description")?.textContent || "";
-      const pubDate = item.querySelector("pubDate")?.textContent || "";
-      const img     = getImage(item);
-      const id      = simpleHash(link || title);
-      const bm      = bookmarks.has(id);
+    data.articles.forEach(article => {
+      const id = simpleHash(article.url);
+      const bm = bookmarks.has(id);
 
       const card = document.createElement("div");
       card.className = "ncard";
       card.innerHTML = `
-        ${img
-          ? `<img class="cimg" src="${img}" onerror="this.style.display='none'" loading="lazy" alt="">`
+        ${article.image
+          ? `<img class="cimg" src="${article.image}" onerror="this.style.display='none'" loading="lazy" alt="">`
           : `<div class="cph"><i class="ti ti-news"></i></div>`}
         <div class="cbody">
-          <div class="csrc">${chanTitle}</div>
-          <div class="ctitle">${title}</div>
+          <div class="csrc">${article.source?.name || cat}</div>
+          <div class="ctitle">${article.title}</div>
           <div class="cmeta">
             <span class="ctime">
-              <i class="ti ti-clock" style="font-size:11px;vertical-align:-1px"></i> ${ago(pubDate)}
+              <i class="ti ti-clock" style="font-size:11px;vertical-align:-1px"></i>
+              ${ago(article.publishedAt)}
             </span>
             <button class="bmbtn${bm ? " saved" : ""}" data-id="${id}" aria-label="Bookmark">
               <i class="ti ti-bookmark"></i>
@@ -192,45 +169,43 @@ async function loadNews(cat) {
       };
 
       card.onclick = e => {
-        if (!e.target.closest(".bmbtn"))
-          openArticle({ title, link, description: desc, pubDate }, chanTitle, img);
+        if (!e.target.closest(".bmbtn")) openArticle(article);
       };
       el.appendChild(card);
     });
   } catch (err) {
     console.error(err);
     el.innerHTML = `<div class="smsg">
-      <i class="ti ti-wifi-off" style="font-size:28px;display:block;margin:0 auto 8px"></i>
-      Could not load news.<br>Try another category.
+      <i class="ti ti-alert-circle" style="font-size:28px;display:block;margin:0 auto 8px"></i>
+      ${err.message}<br><small>Check your GNews API key or try again.</small>
     </div>`;
   }
 }
 
-async function openArticle(item, src, img) {
-  const ac   = document.getElementById("artContent");
-  const desc = item.description.replace(/<[^>]+>/g, "").slice(0, 600);
-
+async function openArticle(article) {
+  const ac = document.getElementById("artContent");
   ac.innerHTML = `
-    <div class="art-src">${src} · ${ago(item.pubDate)}</div>
-    <div class="art-title">${item.title}</div>
-    ${img ? `<img class="art-img" src="${img}" onerror="this.style.display='none'" alt="">` : ""}
+    <div class="art-src">${article.source?.name || "News"} · ${ago(article.publishedAt)}</div>
+    <div class="art-title">${article.title}</div>
+    ${article.image ? `<img class="art-img" src="${article.image}" onerror="this.style.display='none'" alt="">` : ""}
     <div class="ai-box">
       <div class="ai-label"><span class="ldot"></span> AI Simple Summary <span class="badge">Easy English</span></div>
       <div class="ai-text" id="aiText"><span class="spin"></span> Simplifying...</div>
     </div>
-    <a href="${item.link}" class="read-link" target="_blank">
+    <a href="${article.url}" class="read-link" target="_blank">
       Read full article <i class="ti ti-external-link" style="font-size:13px"></i>
     </a>`;
 
   document.getElementById("listView").style.display = "none";
   document.getElementById("artView").style.display  = "block";
 
+  const content = article.description || article.title;
   try {
-    const res  = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": API_KEY,
+        "x-api-key": CLAUDE_KEY,
         "anthropic-version": "2023-06-01",
         "anthropic-dangerous-direct-browser-access": "true"
       },
@@ -239,7 +214,7 @@ async function openArticle(item, src, img) {
         max_tokens: 1000,
         messages: [{
           role: "user",
-          content: `Summarize this news in 3-4 simple sentences. Use very easy English. No difficult words. No intro phrase, just the summary directly.\n\nTitle: ${item.title}\nContent: ${desc}`
+          content: `Summarize this news in 3-4 simple sentences. Use very easy English words. No difficult vocabulary. No intro phrase — just the plain summary.\n\nTitle: ${article.title}\nContent: ${content}`
         }]
       })
     });
