@@ -139,14 +139,31 @@ async function loadNews(cat) {
   const el = document.getElementById("nlist");
   el.innerHTML = `<div class="smsg"><span class="spin"></span> Fetching ${cat} news...</div>`;
   try {
-    const r = await fetch(R2J + encodeURIComponent(FEEDS[cat]));
+    const url = FEEDS[cat];
+    const r = await fetch(PROXY + encodeURIComponent(url));
     if (!r.ok) throw new Error();
-    const d = await r.json();
-    if (!d.items?.length) throw new Error();
+    const data = await r.json();
+
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(data.contents, "text/xml");
+    const channelTitle = xml.querySelector("channel > title")?.textContent || cat;
+
+    const rawItems = [...xml.querySelectorAll("item")];
+    if (!rawItems.length) throw new Error("empty");
+
+    const items = rawItems.slice(0, 15).map(i => ({
+      title:       i.querySelector("title")?.textContent || "",
+      link:        i.querySelector("link")?.textContent || "",
+      description: i.querySelector("description")?.textContent || "",
+      pubDate:     i.querySelector("pubDate")?.textContent || "",
+      thumbnail:   i.querySelector("thumbnail")?.getAttribute("url")
+                || i.querySelector("enclosure[type^='image']")?.getAttribute("url")
+                || i.querySelector("content")?.getAttribute("url") || ""
+    }));
 
     el.innerHTML = "";
-    d.items.forEach(item => {
-      const img = item.thumbnail || (item.enclosure?.type?.startsWith("image") ? item.enclosure.link : "");
+    items.forEach(item => {
+      const img = item.thumbnail || "";
       const id  = simpleHash(item.link || item.title);
       const bm  = bookmarks.has(id);
 
@@ -154,10 +171,10 @@ async function loadNews(cat) {
       card.className = "ncard";
       card.innerHTML = `
         ${img
-          ? `<img class="cimg" src="${img}" onerror="this.outerHTML='<div class=cph><i class=ti.ti-news></i></div>'" loading="lazy" alt="">`
+          ? `<img class="cimg" src="${img}" onerror="this.style.display='none'" loading="lazy" alt="">`
           : `<div class="cph"><i class="ti ti-news"></i></div>`}
         <div class="cbody">
-          <div class="csrc">${d.feed?.title || cat}</div>
+          <div class="csrc">${channelTitle}</div>
           <div class="ctitle">${item.title}</div>
           <div class="cmeta">
             <span class="ctime"><i class="ti ti-clock" style="font-size:11px;vertical-align:-1px"></i> ${ago(item.pubDate)}</span>
@@ -173,15 +190,14 @@ async function loadNews(cat) {
         bookmarks.has(g) ? bookmarks.delete(g) : bookmarks.add(g);
         e.currentTarget.classList.toggle("saved", bookmarks.has(g));
       };
-
-      card.onclick = e => { if (!e.target.closest(".bmbtn")) openArticle(item, d.feed?.title || cat, img); };
+      card.onclick = e => { if (!e.target.closest(".bmbtn")) openArticle(item, channelTitle, img); };
       el.appendChild(card);
     });
-  } catch {
+  } catch(err) {
     el.innerHTML = `<div class="smsg"><i class="ti ti-wifi-off" style="font-size:28px;display:block;margin:0 auto 8px"></i>Could not load news.<br>Try another category.</div>`;
+    console.error(err);
   }
 }
-
 async function openArticle(item, src, img) {
   const ac  = document.getElementById("artContent");
   const desc = (item.description || "").replace(/<[^>]+>/g, "").slice(0, 600);
