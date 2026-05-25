@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI News Simplified</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #111; }
+  
+  .header { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 14px 20px; position: sticky; top: 0; z-index: 10; }
+  .header-title { font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .header-sub { font-size: 12px; color: #888; margin-top: 2px; }
+  .ldot { width: 8px; height: 8px; background: #e63946; border-radius: 50%; display: inline-block; animation: blink 1.4s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .tabs { background: #fff; padding: 10px 16px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid #e5e5e5; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; white-space: nowrap; border: 1px solid #ddd; background: #fff; color: #555; font-family: inherit; }
+  .tab.active { background: #111; color: #fff; border-color: #111; }
+
+  .container { max-width: 700px; margin: 0 auto; }
+
+  .news-list { background: #fff; margin: 12px 12px 0; border-radius: 12px; overflow: hidden; }
+  .ncard { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; align-items: flex-start; transition: background 0.15s; }
+  .ncard:hover { background: #fafafa; }
+  .ncard:last-child { border-bottom: none; }
+  .cimg { width: 76px; height: 76px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: #f0f0f0; }
+  .cph { width: 76px; height: 76px; border-radius: 8px; flex-shrink: 0; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 24px; }
+  .cbody { flex: 1; min-width: 0; }
+  .csrc { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+  .ctitle { font-size: 14px; font-weight: 500; color: #111; line-height: 1.4; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .cmeta { display: flex; align-items: center; justify-content: space-between; }
+  .ctime { font-size: 12px; color: #888; }
+  .bmbtn { background: none; border: none; cursor: pointer; color: #bbb; padding: 3px 5px; font-size: 16px; }
+  .bmbtn.saved { color: #e63946; }
+
+  .art-view { display: none; background: #fff; margin: 12px 12px 0; border-radius: 12px; overflow: hidden; padding: 16px; }
+  .back-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: 1px solid #ddd; border-radius: 8px; padding: 7px 14px; cursor: pointer; font-size: 13px; color: #555; font-family: inherit; margin-bottom: 14px; }
+  .back-btn:hover { background: #f5f5f5; }
+  .art-src { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+  .art-title { font-size: 18px; font-weight: 600; color: #111; line-height: 1.4; margin-bottom: 12px; }
+  .art-img { width: 100%; height: 200px; object-fit: cover; border-radius: 10px; margin-bottom: 14px; }
+  .ai-box { background: #f8f9fa; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; border: 1px solid #e9ecef; }
+  .ai-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.4px; display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-weight: 500; }
+  .ai-text { font-size: 15px; color: #222; line-height: 1.7; }
+  .read-link { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #0066cc; text-decoration: none; padding: 8px 0; }
+  
+  .spin { display: inline-block; width: 13px; height: 13px; border: 2px solid #ddd; border-top-color: #888; border-radius: 50%; animation: sp 0.7s linear infinite; vertical-align: -2px; margin-right: 5px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .smsg { text-align: center; padding: 3rem 1rem; color: #888; font-size: 14px; line-height: 2; }
+  
+  .badge { background: #e8f4fd; color: #0066cc; font-size: 10px; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
+
+  @media (max-width: 480px) {
+    .header { padding: 12px 16px; }
+    .news-list, .art-view { margin: 8px 8px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="header-title"><span class="ldot"></span> AI News Simplified</div>
+    <div class="header-sub">Any language · Easy English · Powered by Claude AI</div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div id="listView">
+    <div class="news-list" id="nlist">
+      <div class="smsg"><span class="spin"></span> Loading latest news...</div>
+    </div>
+  </div>
+
+  <div class="art-view" id="artView">
+    <button class="back-btn" onclick="goBack()">
+      <i class="ti ti-arrow-left"></i> Back to news
+    </button>
+    <div id="artContent"></div>
+  </div>
+</div>
+
+<script>
+const FEEDS = {
+  "World":    "https://feeds.bbci.co.uk/news/world/rss.xml",
+  "Pakistan": "https://www.dawn.com/feeds/home",
+  "Tech":     "https://techcrunch.com/feed/",
+  "Business": "https://feeds.bbci.co.uk/news/business/rss.xml",
+  "Sports":   "https://feeds.bbci.co.uk/sport/rss.xml"
+};
+
+const ICONS = {
+  World:"ti-world", Pakistan:"ti-flag-3", Tech:"ti-device-laptop",
+  Business:"ti-chart-line", Sports:"ti-trophy"
+};
+
+const API_KEY  = "YOUR_CLAUDE_API_KEY_HERE";  // Replace with your key
+const R2J      = "https://api.rss2json.com/v1/api.json?count=15&rss_url=";
+const bookmarks = new Set();
+
+// Build tabs
+const tabsEl = document.getElementById("tabs");
+Object.keys(FEEDS).forEach((cat, i) => {
+  const b = document.createElement("button");
+  b.className = "tab" + (i === 0 ? " active" : "");
+  b.innerHTML = `<i class="ti ${ICONS[cat]}" style="font-size:12px;vertical-align:-1px;margin-right:3px"></i>${cat}`;
+  b.onclick = () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    b.classList.add("active");
+    goBack();
+    loadNews(cat);
+  };
+  tabsEl.appendChild(b);
+});
+
+function ago(d) {
+  if (!d) return "";
+  const m = (Date.now() - new Date(d)) / 60000;
+  if (m < 60) return Math.floor(m) + "m ago";
+  if (m < 1440) return Math.floor(m / 60) + "h ago";
+  return Math.floor(m / 1440) + "d ago";
+}
+
+function goBack() {
+  document.getElementById("listView").style.display = "block";
+  document.getElementById("artView").style.display = "none";
+}
+
+function simpleHash(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) { h = ((h << 5) - h) + str.charCodeAt(i); h |= 0; }
+  return Math.abs(h).toString(36).slice(0, 12);
+}
+
+async function loadNews(cat) {
+  const el = document.getElementById("nlist");
+  el.innerHTML = `<div class="smsg"><span class="spin"></span> Fetching ${cat} news...</div>`;
+  try {
+    const r = await fetch(R2J + encodeURIComponent(FEEDS[cat]));
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    if (!d.items?.length) throw new Error();
+
+    el.innerHTML = "";
+    d.items.forEach(item => {
+      const img = item.thumbnail || (item.enclosure?.type?.startsWith("image") ? item.enclosure.link : "");
+      const id  = simpleHash(item.link || item.title);
+      const bm  = bookmarks.has(id);
+
+      const card = document.createElement("div");
+      card.className = "ncard";
+      card.innerHTML = `
+        ${img
+          ? `<img class="cimg" src="${img}" onerror="this.outerHTML='<div class=cph><i class=ti.ti-news></i></div>'" loading="lazy" alt="">`
+          : `<div class="cph"><i class="ti ti-news"></i></div>`}
+        <div class="cbody">
+          <div class="csrc">${d.feed?.title || cat}</div>
+          <div class="ctitle">${item.title}</div>
+          <div class="cmeta">
+            <span class="ctime"><i class="ti ti-clock" style="font-size:11px;vertical-align:-1px"></i> ${ago(item.pubDate)}</span>
+            <button class="bmbtn${bm ? " saved" : ""}" data-id="${id}" aria-label="Bookmark">
+              <i class="ti ti-bookmark"></i>
+            </button>
+          </div>
+        </div>`;
+
+      card.querySelector(".bmbtn").onclick = e => {
+        e.stopPropagation();
+        const g = e.currentTarget.dataset.id;
+        bookmarks.has(g) ? bookmarks.delete(g) : bookmarks.add(g);
+        e.currentTarget.classList.toggle("saved", bookmarks.has(g));
+      };
+
+      card.onclick = e => { if (!e.target.closest(".bmbtn")) openArticle(item, d.feed?.title || cat, img); };
+      el.appendChild(card);
+    });
+  } catch {
+    el.innerHTML = `<div class="smsg"><i class="ti ti-wifi-off" style="font-size:28px;display:block;margin:0 auto 8px"></i>Could not load news.<br>Try another category.</div>`;
+  }
+}
+
+async function openArticle(item, src, img) {
+  const ac  = document.getElementById("artContent");
+  const desc = (item.description || "").replace(/<[^>]+>/g, "").slice(0, 600);
+
+  ac.innerHTML = `
+    <div class="art-src">${src} · ${ago(item.pubDate)}</div>
+    <div class="art-title">${item.title}</div>
+    ${img ? `<img class="art-img" src="${img}" onerror="this.style.display='none'" alt="">` : ""}
+    <div class="ai-box">
+      <div class="ai-label"><span class="ldot"></span> AI Simple Summary <span class="badge">Easy English</span></div>
+      <div class="ai-text" id="aiText"><span class="spin"></span> Simplifying...</div>
+    </div>
+    <a href="${item.link}" class="read-link" target="_blank">
+      Read full article <i class="ti ti-external-link" style="font-size:13px"></i>
+    </a>`;
+
+  document.getElementById("listView").style.display = "none";
+  document.getElementById("artView").style.display = "block";
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: `Summarize this news in 3-4 simple sentences. Use very easy English words only. No difficult vocabulary. No intro phrase — just the summary.\n\nTitle: ${item.title}\nContent: ${desc}` }]
+      })
+    });
+    const data = await res.json();
+    document.getElementById("aiText").textContent = data.content?.[0]?.text || "Summary not available.";
+  } catch {
+    document.getElementById("aiText").textContent = "AI summary not available. Please read the full article.";
+  }
+}
+
+loadNews("World");
+</script>
+</body>
+</html>
