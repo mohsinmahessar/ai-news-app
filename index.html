@@ -97,11 +97,10 @@ const ICONS = {
   Business:"ti-chart-line", Sports:"ti-trophy"
 };
 
-const API_KEY  = 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;  // Replace with your key
-const PROXY = "https://api.allorigins.win/get?url=";
+const API_KEY   = "YOUR_CLAUDE_API_KEY_HERE";
+const PROXY     = "https://corsproxy.io/?";
 const bookmarks = new Set();
 
-// Build tabs
 const tabsEl = document.getElementById("tabs");
 Object.keys(FEEDS).forEach((cat, i) => {
   const b = document.createElement("button");
@@ -126,7 +125,7 @@ function ago(d) {
 
 function goBack() {
   document.getElementById("listView").style.display = "block";
-  document.getElementById("artView").style.display = "none";
+  document.getElementById("artView").style.display  = "none";
 }
 
 function simpleHash(str) {
@@ -135,37 +134,36 @@ function simpleHash(str) {
   return Math.abs(h).toString(36).slice(0, 12);
 }
 
+function getImage(item) {
+  return item.getElementsByTagName("media:thumbnail")[0]?.getAttribute("url")
+      || item.getElementsByTagName("media:content")[0]?.getAttribute("url")
+      || item.querySelector("enclosure[type^='image']")?.getAttribute("url")
+      || (item.querySelector("description")?.textContent?.match(/<img[^>]+src=["']([^"']+)["']/) || [])[1]
+      || "";
+}
+
 async function loadNews(cat) {
   const el = document.getElementById("nlist");
   el.innerHTML = `<div class="smsg"><span class="spin"></span> Fetching ${cat} news...</div>`;
   try {
-    const url = FEEDS[cat];
-    const r = await fetch(PROXY + encodeURIComponent(url));
-    if (!r.ok) throw new Error();
-    const data = await r.json();
+    const res  = await fetch(PROXY + encodeURIComponent(FEEDS[cat]));
+    if (!res.ok) throw new Error("fetch failed");
+    const text = await res.text();
+    const xml  = new DOMParser().parseFromString(text, "text/xml");
 
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(data.contents, "text/xml");
-    const channelTitle = xml.querySelector("channel > title")?.textContent || cat;
-
-    const rawItems = [...xml.querySelectorAll("item")];
+    const chanTitle = xml.querySelector("channel > title")?.textContent || cat;
+    const rawItems  = [...xml.querySelectorAll("item")].slice(0, 15);
     if (!rawItems.length) throw new Error("empty");
 
-    const items = rawItems.slice(0, 15).map(i => ({
-      title:       i.querySelector("title")?.textContent || "",
-      link:        i.querySelector("link")?.textContent || "",
-      description: i.querySelector("description")?.textContent || "",
-      pubDate:     i.querySelector("pubDate")?.textContent || "",
-      thumbnail:   i.querySelector("thumbnail")?.getAttribute("url")
-                || i.querySelector("enclosure[type^='image']")?.getAttribute("url")
-                || i.querySelector("content")?.getAttribute("url") || ""
-    }));
-
     el.innerHTML = "";
-    items.forEach(item => {
-      const img = item.thumbnail || "";
-      const id  = simpleHash(item.link || item.title);
-      const bm  = bookmarks.has(id);
+    rawItems.forEach(item => {
+      const title   = item.querySelector("title")?.textContent || "";
+      const link    = item.querySelector("link")?.textContent  || "";
+      const desc    = item.querySelector("description")?.textContent || "";
+      const pubDate = item.querySelector("pubDate")?.textContent || "";
+      const img     = getImage(item);
+      const id      = simpleHash(link || title);
+      const bm      = bookmarks.has(id);
 
       const card = document.createElement("div");
       card.className = "ncard";
@@ -174,10 +172,12 @@ async function loadNews(cat) {
           ? `<img class="cimg" src="${img}" onerror="this.style.display='none'" loading="lazy" alt="">`
           : `<div class="cph"><i class="ti ti-news"></i></div>`}
         <div class="cbody">
-          <div class="csrc">${channelTitle}</div>
-          <div class="ctitle">${item.title}</div>
+          <div class="csrc">${chanTitle}</div>
+          <div class="ctitle">${title}</div>
           <div class="cmeta">
-            <span class="ctime"><i class="ti ti-clock" style="font-size:11px;vertical-align:-1px"></i> ${ago(item.pubDate)}</span>
+            <span class="ctime">
+              <i class="ti ti-clock" style="font-size:11px;vertical-align:-1px"></i> ${ago(pubDate)}
+            </span>
             <button class="bmbtn${bm ? " saved" : ""}" data-id="${id}" aria-label="Bookmark">
               <i class="ti ti-bookmark"></i>
             </button>
@@ -190,17 +190,25 @@ async function loadNews(cat) {
         bookmarks.has(g) ? bookmarks.delete(g) : bookmarks.add(g);
         e.currentTarget.classList.toggle("saved", bookmarks.has(g));
       };
-      card.onclick = e => { if (!e.target.closest(".bmbtn")) openArticle(item, channelTitle, img); };
+
+      card.onclick = e => {
+        if (!e.target.closest(".bmbtn"))
+          openArticle({ title, link, description: desc, pubDate }, chanTitle, img);
+      };
       el.appendChild(card);
     });
-  } catch(err) {
-    el.innerHTML = `<div class="smsg"><i class="ti ti-wifi-off" style="font-size:28px;display:block;margin:0 auto 8px"></i>Could not load news.<br>Try another category.</div>`;
+  } catch (err) {
     console.error(err);
+    el.innerHTML = `<div class="smsg">
+      <i class="ti ti-wifi-off" style="font-size:28px;display:block;margin:0 auto 8px"></i>
+      Could not load news.<br>Try another category.
+    </div>`;
   }
 }
+
 async function openArticle(item, src, img) {
-  const ac  = document.getElementById("artContent");
-  const desc = (item.description || "").replace(/<[^>]+>/g, "").slice(0, 600);
+  const ac   = document.getElementById("artContent");
+  const desc = item.description.replace(/<[^>]+>/g, "").slice(0, 600);
 
   ac.innerHTML = `
     <div class="art-src">${src} · ${ago(item.pubDate)}</div>
@@ -215,16 +223,24 @@ async function openArticle(item, src, img) {
     </a>`;
 
   document.getElementById("listView").style.display = "none";
-  document.getElementById("artView").style.display = "block";
+  document.getElementById("artView").style.display  = "block";
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res  = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-api-key": API_KEY, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 1000,
-        messages: [{ role: "user", content: `Summarize this news in 3-4 simple sentences. Use very easy English words only. No difficult vocabulary. No intro phrase — just the summary.\n\nTitle: ${item.title}\nContent: ${desc}` }]
+        messages: [{
+          role: "user",
+          content: `Summarize this news in 3-4 simple sentences. Use very easy English. No difficult words. No intro phrase, just the summary directly.\n\nTitle: ${item.title}\nContent: ${desc}`
+        }]
       })
     });
     const data = await res.json();
