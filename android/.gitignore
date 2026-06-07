@@ -1,0 +1,19 @@
+# Built files
+*.iml
+.gradle/
+/local.properties
+.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+*.apk
+*.aab
+
+# Secrets / Firebase
+google-services.json
+
+# Keystore
+*.jks
+*.keystore

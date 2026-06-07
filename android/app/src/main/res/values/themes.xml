@@ -1,0 +1,8 @@
+<resources>
+    <!-- Base theme. The actual colors are driven by Compose Material3 (see ui/theme).
+         This XML theme only seeds the window before Compose takes over. -->
+    <style name="Theme.SmartReaderAI" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>
