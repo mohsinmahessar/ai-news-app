@@ -18,9 +18,19 @@ val localProps = Properties().apply {
 }
 fun secret(key: String): String = (localProps.getProperty(key) ?: System.getenv(key) ?: "")
 
+// Some newer transitive dependencies (e.g. androidx.core 1.19.x) demand a very
+// new compileSdk. Pin androidx.core to a stable version so the project builds
+// against widely-installed SDKs without forcing an SDK upgrade.
+configurations.all {
+    resolutionStrategy {
+        force("androidx.core:core:1.13.1")
+        force("androidx.core:core-ktx:1.13.1")
+    }
+}
+
 android {
     namespace = "com.smartreader.ai"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.smartreader.ai"
