@@ -131,9 +131,6 @@ dependencies {
     // Play Billing
     implementation(libs.play.billing.ktx)
 
-    // PDFium (large-PDF rendering fallback)
-    implementation(libs.pdfium.android)
-
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
 }
