@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.smartreader.ai.data.local.entity.BookEntity
 import com.smartreader.ai.data.repository.AuthManager
 import com.smartreader.ai.data.repository.BookRepository
+import com.smartreader.ai.data.seed.SampleContentSeeder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,8 +29,14 @@ data class HomeUiState(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val bookRepository: BookRepository,
+    private val sampleContentSeeder: SampleContentSeeder,
     authManager: AuthManager,
 ) : ViewModel() {
+
+    init {
+        // Populate sample books on first launch so the library isn't empty.
+        viewModelScope.launch { sampleContentSeeder.seedIfNeeded() }
+    }
 
     val searchQuery = MutableStateFlow("")
 

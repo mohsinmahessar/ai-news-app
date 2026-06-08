@@ -1,5 +1,6 @@
 package com.smartreader.ai.ui.vocabulary
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -142,14 +143,25 @@ private fun FlashcardDeck(
     ) {
         Card(
             modifier = Modifier.fillMaxWidth().clickable { revealed = !revealed },
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
         ) {
-            Column(Modifier.padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(word.word, style = MaterialTheme.typography.headlineMedium)
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .background(com.smartreader.ai.ui.theme.brandGradient())
+                    .padding(36.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    word.word,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = androidx.compose.ui.graphics.Color.White,
+                )
                 if (revealed) {
-                    Text(word.meaning, modifier = Modifier.padding(top = 16.dp))
-                    if (word.example.isNotBlank()) Text("“${word.example}”", modifier = Modifier.padding(top = 8.dp))
+                    Text(word.meaning, color = androidx.compose.ui.graphics.Color.White, modifier = Modifier.padding(top = 16.dp))
+                    if (word.example.isNotBlank()) Text("“${word.example}”", color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.85f), modifier = Modifier.padding(top = 8.dp))
                 } else {
-                    Text("Tap to reveal", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f), modifier = Modifier.padding(top = 16.dp))
+                    Text("Tap to reveal", color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f), modifier = Modifier.padding(top = 16.dp))
                 }
             }
         }

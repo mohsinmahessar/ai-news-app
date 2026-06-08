@@ -2,6 +2,7 @@ package com.smartreader.ai.ui.home
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,12 +22,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Style
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -37,18 +39,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smartreader.ai.data.local.entity.BookEntity
+import com.smartreader.ai.ui.components.BookCover
+import com.smartreader.ai.ui.components.EmptyState
+import com.smartreader.ai.ui.components.GradientHeader
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,43 +71,45 @@ fun HomeScreen(
     val isImporting by viewModel.isImporting.collectAsStateWithLifecycle()
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
 
-    // System file picker scoped to PDFs. Result Uri is copied into app storage.
     val picker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let(viewModel::importPdf) }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Hi, $greeting 👋") },
-                actions = {
-                    IconButton(onClick = onOpenVocabulary) {
-                        Icon(Icons.Default.Style, contentDescription = "Vocabulary")
-                    }
-                    IconButton(onClick = onOpenAnalytics) {
-                        Icon(Icons.Default.BarChart, contentDescription = "Analytics")
-                    }
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
-                    }
-                },
-            )
-        },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { picker.launch(arrayOf("application/pdf")) },
                 icon = {
-                    if (isImporting) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    if (isImporting) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White)
                     else Icon(Icons.Default.Add, contentDescription = null)
                 },
                 text = { Text(if (isImporting) "Importing…" else "Add book") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = Color.White,
             )
         },
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = padding.calculateBottomPadding() + 90.dp),
         ) {
+            item {
+                GradientHeader(
+                    title = "Hi, $greeting 👋",
+                    subtitle = "Continue your reading journey",
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        HeaderChip("Vocabulary", Icons.Default.Style, onOpenVocabulary)
+                        HeaderChip("Stats", Icons.Default.BarChart, onOpenAnalytics)
+                        HeaderChip("Settings", Icons.Default.Settings, onOpenSettings)
+                    }
+                }
+            }
+
             item {
                 OutlinedTextField(
                     value = query,
@@ -109,14 +117,22 @@ fun HomeScreen(
                     placeholder = { Text("Search your books") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    ),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 )
             }
 
             if (continueReading.isNotEmpty() && query.isBlank()) {
                 item { SectionTitle("Continue reading") }
                 item {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp),
+                    ) {
                         items(continueReading, key = { it.id }) { book ->
                             ContinueCard(book) { onOpenBook(book.id) }
                         }
@@ -127,18 +143,40 @@ fun HomeScreen(
             item { SectionTitle("My books") }
 
             if (books.isEmpty()) {
-                item { EmptyLibrary() }
+                item {
+                    EmptyState(
+                        icon = Icons.Default.MenuBook,
+                        title = "No books yet",
+                        message = "Tap “Add book” to import your first PDF and start reading smarter.",
+                    )
+                }
             } else {
                 items(books, key = { it.id }) { book ->
                     BookRow(
                         book = book,
                         onClick = { onOpenBook(book.id) },
                         onDelete = { viewModel.deleteBook(book) },
+                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                 }
             }
-            item { Spacer(Modifier.height(80.dp)) }
         }
+    }
+}
+
+@Composable
+private fun HeaderChip(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(Color.White.copy(alpha = 0.18f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = label, tint = Color.White, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(label, color = Color.White, style = MaterialTheme.typography.labelMedium)
     }
 }
 
@@ -147,102 +185,59 @@ private fun SectionTitle(text: String) {
     Text(
         text,
         style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.padding(top = 8.dp),
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
     )
 }
 
 @Composable
 private fun ContinueCard(book: BookEntity, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .width(120.dp)
-            .clickable(onClick = onClick),
-    ) {
-        Box(
-            modifier = Modifier
-                .width(120.dp)
-                .height(160.dp)
-                .clip(RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            CoverPlaceholder(book.title)
-        }
+    Column(modifier = Modifier.width(124.dp).clickable(onClick = onClick)) {
+        BookCover(book.title, Modifier.width(124.dp).height(168.dp))
         Text(
             book.title,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 6.dp),
+            modifier = Modifier.padding(top = 8.dp),
         )
         LinearProgressIndicator(
             progress = { book.progress },
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp).clip(RoundedCornerShape(50)),
         )
     }
 }
 
 @Composable
-private fun BookRow(book: BookEntity, onClick: () -> Unit, onDelete: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+private fun BookRow(book: BookEntity, onClick: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
-        Box(
-            modifier = Modifier.size(56.dp, 72.dp).clip(RoundedCornerShape(8.dp)),
-            contentAlignment = Alignment.Center,
-        ) { CoverPlaceholder(book.title) }
-
-        Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
-            Text(book.title, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(
-                "${(book.progress * 100).toInt()}% • ${book.totalPages} pages",
-                style = MaterialTheme.typography.bodyLarge.copy(fontSize = androidx.compose.ui.unit.TextUnit.Unspecified),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            )
-            LinearProgressIndicator(progress = { book.progress }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
-        }
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
-        }
-    }
-}
-
-@Composable
-private fun CoverPlaceholder(title: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        // Simple gradient-ish placeholder; real covers come from cached page 1 thumbnail.
-        Box(
-            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)),
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                Icons.Default.Book,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                modifier = Modifier.align(Alignment.Center).size(28.dp),
-            )
+            BookCover(book.title, Modifier.size(width = 52.dp, height = 70.dp))
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 14.dp)) {
+                Text(book.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(
+                    "${(book.progress * 100).toInt()}% • ${book.totalPages} pages",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+                LinearProgressIndicator(
+                    progress = { book.progress },
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(50)),
+                )
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
-    }
-}
-
-@Composable
-private fun EmptyLibrary() {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
-        Text("No books yet", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 12.dp))
-        Text(
-            "Tap “Add book” to import your first PDF.",
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-            modifier = Modifier.padding(top = 4.dp),
-        )
     }
 }

@@ -11,19 +11,22 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Card
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.smartreader.ai.ui.components.StatCard
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -89,11 +92,12 @@ fun AnalyticsScreen(
     viewModel: AnalyticsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    data class Stat(val label: String, val value: String, val icon: ImageVector, val highlighted: Boolean = false)
     val cards = listOf(
-        "Pages read" to state.pagesRead.toString(),
-        "Time spent" to state.hoursSpent,
-        "Words learned" to state.vocabularyLearned.toString(),
-        "Day streak" to "🔥 ${state.streakDays}",
+        Stat("Pages read", state.pagesRead.toString(), Icons.AutoMirrored.Filled.MenuBook),
+        Stat("Time spent", state.hoursSpent, Icons.Default.Schedule),
+        Stat("Words learned", state.vocabularyLearned.toString(), Icons.Default.Style),
+        Stat("Day streak", "${state.streakDays}", Icons.Default.LocalFireDepartment, highlighted = true),
     )
 
     Scaffold(
@@ -114,13 +118,13 @@ fun AnalyticsScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(cards) { (label, value) ->
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(20.dp)) {
-                        Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                        Text(label, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), modifier = Modifier.padding(top = 4.dp))
-                    }
-                }
+            items(cards) { stat ->
+                StatCard(
+                    label = stat.label,
+                    value = stat.value,
+                    icon = stat.icon,
+                    highlighted = stat.highlighted,
+                )
             }
         }
     }
